@@ -21,6 +21,12 @@ public class PrimaryController {
     private ProgressIndicator pIndicator;
     
     @FXML
+    public void initialize() throws InterruptedException {
+        System.out.println("Initializing Primary Controller");
+        runStartMicroRosAgentScript();
+    }
+    
+    @FXML
     private void switchToSecondary() throws IOException {
         App.setRoot("secondary");
     }
@@ -38,11 +44,6 @@ public class PrimaryController {
     @FXML
     private void autonomousModeButtonPressed() throws IOException, InterruptedException {
         runScript("/home/ubuntu/Scripts/autoRobot.sh", "Robot is in Auto Mode");
-     }
-
-    @FXML
-    private void microRosAgentButtonPressed() throws IOException, InterruptedException {
-        runStartMicroRosAgentScript();
      }
 
     @FXML

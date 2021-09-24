@@ -26,7 +26,6 @@
                         <Font name="System Bold" size="13.0" />
                      </font>
                   </Label>
-                  <Button fx:id="microRosAgentButton" mnemonicParsing="false" onMousePressed="#microRosAgentButtonPressed" text="Start MicroRos Agent" />
                   <Button fx:id="disableRobotButton" mnemonicParsing="false" onMousePressed="#disableRobotButtonPressed" text="Disable Robot" />
                   <Button fx:id="teleopModeButton" mnemonicParsing="false" onMousePressed="#teleopModeButtonPressed" text="Teleop Mode" />
                   <Button fx:id="autonomousModeButton" mnemonicParsing="false" onMousePressed="#autonomousModeButtonPressed" text="Autonomous Mode" />
