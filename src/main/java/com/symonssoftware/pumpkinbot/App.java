@@ -15,12 +15,12 @@ import javafx.stage.Screen;
  */
 public class App extends Application {
 
-    private static int toastMsgTime = 3500; //3.5 seconds
+    private static int toastMsgTime = 1000; //3.5 seconds
     private static int fadeInTime = 500; //0.5 seconds
     private static int fadeOutTime= 500; //0.5 seconds
     
     private static Scene scene;
-    private static Stage currentStage;
+    public static Stage currentStage;
 
     @Override
     public void start(Stage stage) throws IOException {

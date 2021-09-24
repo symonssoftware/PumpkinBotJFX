@@ -12,6 +12,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ProgressIndicator;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 
 public class PrimaryController {
@@ -41,7 +42,7 @@ public class PrimaryController {
 
     @FXML
     private void microRosAgentButtonPressed() throws IOException, InterruptedException {
-        runScript("/home/ubuntu/Scripts/startMicroROSAgent.sh", "MicroRos Agent Started");
+        runStartMicroRosAgentScript();
      }
 
     @FXML
@@ -61,7 +62,8 @@ public class PrimaryController {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
-        alert.showAndWait();
+        alert.initOwner(App.currentStage.getScene().getWindow());
+        alert.show();
     }
 
     private static String output(InputStream inputStream) throws IOException {
@@ -82,49 +84,35 @@ public class PrimaryController {
     public void runScript(String script, String msg) throws InterruptedException {
         
         // Create a Runnable
-        Runnable task = new Runnable()
-        {
-            public void run() {
-                // Update the Process Indicator on the JavaFx Application Thread        
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        pIndicator.setVisible(true);
+        Runnable task = () -> {
+            // Update the Process Indicator on the JavaFx Application Thread
+            Platform.runLater(() -> {
+                pIndicator.setVisible(true);
+            });
+            
+            ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", script);
+            
+            try {
+                Process process = pb.start();
+                int errCode = process.waitFor();
+                
+                // Update the Process Indicator on the JavaFx Application Thread
+                Platform.runLater(() -> {
+                    pIndicator.setVisible(false);
+                    
+                    if (errCode == 0) {
+                        App.makeToast(msg);
+                    } else {
+                        try {
+                            showAlertWithDefaultHeaderText("Script Results", output(process.getInputStream()));
+                        } catch (IOException ex) {
+                        }
                     }
                 });
-
-                ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", script);
-
-                try {
-                    Process process = pb.start();
-                    int errCode = process.waitFor();
-
-                    // Update the Process Indicator on the JavaFx Application Thread        
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            pIndicator.setVisible(false);
-
-                            if (errCode == 0) {
-                                showAlertWithDefaultHeaderText("Script Results", msg);
-                            } else {
-                                try {
-                                    showAlertWithDefaultHeaderText("Script Results", output(process.getInputStream()));
-                                } catch (IOException ex) {
-                                    ex.printStackTrace();
-                                }
-                            }
-                        }
-                    });
-
-                   
-
-                } catch (IOException e) {
-                    System.out.print("error");
-                    e.printStackTrace();
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
+                
+            } catch (IOException e) {
+                System.out.print("error");
+            } catch (InterruptedException ex) {
             }
         };
 
@@ -134,6 +122,93 @@ public class PrimaryController {
         backgroundThread.setDaemon(true);
         // Start the thread
         backgroundThread.start();
-        
-     }
+    }
+
+    public void runStartMicroRosAgentScript() throws InterruptedException {
+
+        // Create a Runnable
+        Runnable task = () -> {
+            // Update the Process Indicator on the JavaFx Application Thread
+            Platform.runLater(() -> {
+                pIndicator.setVisible(true);
+            });
+            
+            System.out.println("Starting Power Off Script");
+
+            ProcessBuilder powerOffTeensyPb
+                    = new ProcessBuilder("/bin/bash", "-c", "/home/ubuntu/Scripts/powerOffTeensy.sh");
+
+            try {
+                int errCode = powerOffTeensyPb.start().waitFor();
+
+                // We need this since the bash script returns immediately but the python script takes time
+                Thread.sleep(6000);
+                
+                if (errCode == 0)
+                {
+                    System.out.println("powerOffTeensyPb Successfully Completed");
+                }
+                else
+                {
+                    System.out.print("powerOffTeensyPb - error: ");
+                    System.out.println(errCode);
+                }
+
+            } catch (IOException | InterruptedException ex) {
+                System.out.println("powerOffTeensyPb-IOException");
+            }
+
+            System.out.println("Starting MicroROS Agent Script");
+            
+            ProcessBuilder startMicroRosAgentPb
+                    = new ProcessBuilder("/bin/bash", "-c", "/home/ubuntu/Scripts/startMicroROSAgent.sh");
+            try {
+                startMicroRosAgentPb.start();
+
+                // We need this since the bash script returns immediately but the agent takes time to start
+                Thread.sleep(3000);
+                
+                System.out.println("startMicroRosAgentPb Successfully Completed");
+
+            } catch (IOException | InterruptedException ex) {
+                System.out.println("startMicroRosAgentPb-IOException");
+            }
+
+            System.out.println("Starting Power On Script");
+            
+            ProcessBuilder powerOnTeensyPb
+                    = new ProcessBuilder("/bin/bash", "-c", "/home/ubuntu/Scripts/powerOnTeensy.sh");
+            try {
+                //powerOnTeensyPb.start();
+                int errCode = powerOnTeensyPb.start().waitFor();
+
+                // We need this since the bash script returns immediately but the python script takes time
+                Thread.sleep(2000);
+                
+                if (errCode == 0)
+                {
+                    System.out.println("powerOnTeensyPb Successfully Completed");
+                }
+                else
+                {
+                    System.out.print("powerOnTeensyPb - error: ");
+                    System.out.println(errCode);
+                }
+            } catch (IOException | InterruptedException ex) {
+                System.out.println("powerOnTeensyPb-IOException");
+            }
+
+            // Update the Process Indicator on the JavaFx Application Thread
+            Platform.runLater(() -> {
+                pIndicator.setVisible(false);
+            });
+        };
+
+        // Run the task in a background thread
+        Thread backgroundThread = new Thread(task);
+        // Terminate the running thread if the application exits
+        backgroundThread.setDaemon(true);
+        // Start the thread
+        backgroundThread.start();
+    }
 }
