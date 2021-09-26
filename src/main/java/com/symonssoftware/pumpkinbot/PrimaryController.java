@@ -57,7 +57,7 @@ public class PrimaryController {
         Platform.exit();
         System.exit(0);
     }
- 
+    
     private void showAlertWithDefaultHeaderText(String title, String content) {
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle(title);
